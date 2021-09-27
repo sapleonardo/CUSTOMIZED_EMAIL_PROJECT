@@ -1,4 +1,4 @@
-# Individualized_Customer_Email # 
+# Customer Email Template w/ Data With Danny # 
 
 ![Email](https://user-images.githubusercontent.com/85455439/134821950-65dadbdd-9135-4ab6-b549-9f3bdcf44055.png)
 
@@ -21,7 +21,7 @@
 
 # EMAIL TEMPLATE DATA PART A: CATEGORY INSIGHTS #
 
-## Baseline Data ## 
+## Category Insights: Baseline Data ## 
 
 ```sql
 CREATE TEMP TABLE complete_joint_dataset AS 
@@ -286,7 +286,165 @@ SELECT * FROM film_counts;
 | 258      | DRUMS DYNAMITE   | Horror         | 13            |
 | 809      | SLIPPER FIDELITY | Sports         | 16            |
 ###### The above code and returned table generates the total COUNT of rentals per film title along with their category name #######
+###### Showcase the film title and category of film the customer has watched along with the number of times they have rented it #######
+
+## Film Exclusions ##
+
+```sql
+CREATE TEMP TABLE category_film_exclusions AS 
+SELECT DISTINCT 
+  customer_id, 
+  film_id
+FROM complete_joint_dataset;
+```
+
+```sql
+SELECT * FROM category_film_exclusions; 
+```
+| customer\_id | film\_id |
+| ------------ | -------- |
+| 596          | 103      |
+| 176          | 121      |
+| 459          | 724      |
+| 375          | 641      |
+###### The above code returns the table with the titles of films each customer has already watched #######
+###### The films which the customer has already watched will not be included in their future film reccomendations #######
 
 
+## Final Category Reccomendations ## 
 
+```sql
+CREATE TEMP TABLE category_recommendations AS 
+WITH ranked_films_cte AS (
+  SELECT 
+    top_categories.customer_id, 
+    top_categories.category_name,
+    top_categories.category_rank,
+    film_counts.film_id,
+    film_counts.title,
+    film_counts.rental_count,
+    DENSE_RANK() OVER (
+      PARTITION BY
+        top_categories.customer_id,
+        top_categories.category_rank
+      ORDER BY 
+        film_counts.rental_count DESC,
+        film_counts.title
+      ) AS reco_rank
+    FROM top_categories
+    INNER JOIN film_counts 
+      ON top_categories.category_name = film_counts.category_name
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM category_film_exclusions
+      WHERE 
+        category_film_exclusions.customer_id = top_categories.customer_id AND 
+        category_film_exclusions.film_id = film_counts.film_id
+        )
+      )
+      SELECT * FROM ranked_films_cte
+      WHERE reco_rank <= 3;
+      ```
+     
+```sql
+SELECT * FROM category_recommendations; 
+ ```
+ | customer\_id | category\_name | category\_rank | film\_id | title          | rental\_count | reco\_rank |
+| ------------ | -------------- | -------------- | -------- | -------------- | ------------- | ---------- |
+| 1            | Classics       | 1              | 891      | TIMBERLAND SKY | 31            | 1          |
+| 1            | Classics       | 1              | 358      | GILMORE BOILED | 28            | 2          |
+| 1            | Classics       | 1              | 951      | VOYAGE LEGALLY | 28            | 3          |
+| 1            | Comedy         | 2              | 1000     | ZORRO ARK      | 31            | 1          |
+###### The code above returns table category recommendations ######
+###### This table returns the top three movie titles recommended based off of the viewers rental history ######
 
+# EMAIL_TEMPLATE_DATA PART C: Actor Insights # 
+
+## Actor: Baseline Data ##
+```sql
+CREATE TEMP TABLE actor_joint_dataset AS
+SELECT
+  rental.customer_id,
+  rental.rental_id,
+  rental.rental_date,
+  film.film_id,
+  film.title,
+  actor.actor_id,
+  actor.first_name,
+  actor.last_name
+FROM dvd_rentals.rental
+INNER JOIN dvd_rentals.inventory
+  ON rental.inventory_id = inventory.inventory_id
+INNER JOIN dvd_rentals.film
+  ON inventory.film_id = film.film_id
+INNER JOIN dvd_rentals.film_actor
+  ON film.film_id = film_actor.film_id
+INNER JOIN dvd_rentals.actor
+  ON film_actor.actor_id = actor.actor_id;
+```
+
+```sql
+SELECT * FROM actor_joint_dataset; 
+```
+| customer\_id | rental\_id | rental\_date             | film\_id | title           | actor\_id | first\_name | last\_name |
+| ------------ | ---------- | ------------------------ | -------- | --------------- | --------- | ----------- | ---------- |
+| 130          | 1          | 2005-05-24T22:53:30.000Z | 80       | BLANKET BEVERLY | 200       | THORA       | TEMPLE     |
+| 130          | 1          | 2005-05-24T22:53:30.000Z | 80       | BLANKET BEVERLY | 193       | BURT        | TEMPLE     |
+| 130          | 1          | 2005-05-24T22:53:30.000Z | 80       | BLANKET BEVERLY | 173       | ALAN        | DREYFUSS   |
+| 130          | 1          | 2005-05-24T22:53:30.000Z | 80       | BLANKET BEVERLY | 16        | FRED        | COSTNER    |
+###### The following code returns the table actor_joint_dataset which returns the titles of films customers have watched with the first and last names of actors ######
+
+## Actor COUNTS ## 
+
+```sql
+CREATE TEMP TABLE top_actor_counts AS 
+WITH actor_counts AS (
+  SELECT 
+    customer_id,
+    actor_id,
+    first_name,
+    last_name,
+    COUNT(*) AS rental_count,
+    MAX(rental_date) AS latest_rental_date
+  FROM actor_joint_dataset
+  GROUP BY 
+    customer_id,
+    actor_id,
+    first_name,
+    last_name
+  ),
+  ranked_actor_counts AS (
+    SELECT 
+      actor_counts.*,
+      DENSE_RANK() OVER (
+        PARTITION BY customer_id
+        ORDER BY 
+          rental_count DESC,
+          latest_rental_date DESC,
+          first_name,
+          last_name
+        ) AS actor_rank
+      FROM actor_counts
+      )
+      SELECT 
+        customer_id,
+        actor_id,
+        first_name, 
+        last_name,
+        rental_count
+      FROM ranked_actor_counts 
+      WHERE actor_rank = 1;
+```
+
+```sql
+SELECT * FROM top_actor_counts; 
+```
+| customer\_id | actor\_id | first\_name | last\_name | rental\_count |
+| ------------ | --------- | ----------- | ---------- | ------------- |
+| 1            | 37        | VAL         | BOLGER     | 6             |
+| 2            | 107       | GINA        | DEGENERES  | 5             |
+| 3            | 150       | JAYNE       | NOLTE      | 4             |
+| 4            | 102       | WALTER      | TORN       | 4             |
+###### The following code returns the table top_actor_counts which shows how many films each customer has rented with a particular actor #######
+
+## Actor Recommendations ##
