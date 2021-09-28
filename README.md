@@ -16,10 +16,17 @@
 ###### Additional reccomendations for films with each customers top actor ###### 
 
 ## What is the difference between group one and group two customer insights?##
-###### Customer Insights Group One: Number of films customer has watched in one of their top categories, how much more views is that than the average viewer, percentile 
-###### Custopmer Insights Group Two: The number of films watched in the second top category, The percentage this comprises of the customer viewing history #######
+###### Customer Insights Group One: Number of films customer has rented in one of their top categories, how much more that is than the average renter of that category
+###### Each customers percentile in terms of rentals in each film category #######
+###### Custopmer Insights Group Two: The number of films rented in the second top category, the total proportion when compared to each customers total rentals #######
 
 # EMAIL TEMPLATE DATA PART A: CATEGORY INSIGHTS #
+## What information will be provided by this category of analysis?##
+###### The number of films each customer rented per category #######
+###### The total number of films each customer rented in total ######
+###### The top two categories of each customer #######
+###### The average number of rentals per category for every customer #######
+###### Each customers overall percentile when compared against every other rental of that category #######
 
 ## Category Insights: Baseline Data ## 
 
@@ -53,6 +60,8 @@ INNER JOIN dvd_rentals.category
 
 ###### The baseline data includes an INNER JOIN of four seperate tables: rental, inventory, film, category and rental ###### 
 ###### The data provided by the baseline table includes the customer_id, the film_id, the film title with the category and the accompanying rental_date ###### 
+###### Returns a basic list of each customers rental and the accompanying date #######
+###### Ex: Customer_130 rented the family film Blanket Beverly on May 5th 2005 ###### 
 
 ## Rental COUNTS Per Category ## 
 
@@ -78,6 +87,7 @@ GROUP BY
 | 314          | Comedy         | 3             | 2005-08-23T21:37:59.000Z |
 | 286          | Travel         | 1             | 2005-08-18T18:58:35.000Z |
  ###### Table category_counts contains a rental count of every film category along with the latest rental date ######
+ ###### Ex: Customer_id 538 rented one comedy film on August 22nd ######
  
  ## Total customer films watched ## 
  
@@ -100,6 +110,7 @@ SELECT * FROM total_counts;
 | 87           | 30           |
 | 477          | 22           |
 ###### The above code returns a total count of every rental watched per customer #######
+###### Ex: Customer_id 87 has watched or rented a total of 30 films ######
 
 ## Top Two Categories Per Customer ## 
 
@@ -133,6 +144,7 @@ SELECT * FROM top_categories;
 | 2            | Sports         | 5             | 1              |
 | 2            | Classics       | 4             | 2              |
 ###### The above code returns an assigned category ranking of 1 or 2 for each customer depending upon their respective rental counts per category name ####### 
+###### Ex: Customer_id 2 top two categories are Classics and Comedy having rented 6 Classics movies and 5 Comedy movies ######
 
 ## Average rental count per category ## 
 
@@ -154,8 +166,9 @@ SELECT * FROM average_category_count;
 | Classics       | 2                 |
 | New            | 2                 |
 | Family         | 2                 |
-###### The above code returns a table displaying the names of film categories and the average rentals/views films of that category received ########
+###### The above code returns a table displaying the names of film categories and the average rentals/views films of that category ########
 ###### When taking into account all customers across the database in question #######
+###### Ex: Sports movies have been rented on average 2 times #######
 
 ## Customer Percentiles Per Top Two Categories ##
 
@@ -201,6 +214,7 @@ SELECT * FROM top_category_percentile;
 | 151          | Action         | 6             | 1              | 1          |
 | 410          | Action         | 6             | 1              | 1          |
 ###### The above code and returning table showcase the percentile of each customer based upon the number of views within each category ######
+###### Ex: Customer_id 323 has rented a total of 7 Action movies. This makes it their most popular category and they are in 1st percentile of renters #######
 
 ## Customer Insights Group A
 
@@ -229,7 +243,7 @@ SELECT * FROM first_category_insights;
 ###### Above code and table showcases the first group of customer insights #######
 ###### First group of insights compares the customers rental_count to the category average 
 ###### As well as the percentile that customer is in regarding views of that category of film 
-
+###### Ex: Customer_id 323 has watched a total of 7 Action films. This categories average is 5 rentals. Putting this customer in the 1st percentile ####### 
 
 ## Customer Insights Group B 
 
@@ -259,8 +273,12 @@ SELECT * FROM second_category_insights;
 | 273          | New            | 4             | 11                |
 ###### Above code and table returns the second group of customer insights 
 ###### The second group of customer insights includes the total percentage each customers rental_count is when compared to the total films they've watched 
+###### Ex: Customer_id 184 has watched a total of 3 Drama films. This makes up %13 of their entire rental history #######
 
 # EMAIL_TEMPLATE DATA PART B: Category Reccomendations # 
+## What information will be provided by this category of analysis? ##
+###### Top three recommendations of film categories based off of each customers rental history #######
+
 
 ## Total Film COUNTS ## 
 
@@ -287,6 +305,8 @@ SELECT * FROM film_counts;
 | 809      | SLIPPER FIDELITY | Sports         | 16            |
 ###### The above code and returned table generates the total COUNT of rentals per film title along with their category name #######
 ###### Showcase the film title and category of film the customer has watched along with the number of times they have rented it #######
+###### Ex: The Sci-Fi film Panther Reds has been rented a total of 15 times ######
+
 
 ## Film Exclusions ##
 
@@ -309,6 +329,7 @@ SELECT * FROM category_film_exclusions;
 | 375          | 641      |
 ###### The above code returns the table with the titles of films each customer has already watched #######
 ###### The films which the customer has already watched will not be included in their future film reccomendations #######
+###### Ex: Customer_id 596 has already rented film_id 103. This film will not be included in this customers category recommendations. ####### 
 
 
 ## Final Category Reccomendations ## 
@@ -345,7 +366,6 @@ WITH ranked_films_cte AS (
       SELECT * FROM ranked_films_cte
       WHERE reco_rank <= 3;
       ```
-     
 ```sql
 SELECT * FROM category_recommendations; 
  ```
@@ -356,9 +376,13 @@ SELECT * FROM category_recommendations;
 | 1            | Classics       | 1              | 951      | VOYAGE LEGALLY | 28            | 3          |
 | 1            | Comedy         | 2              | 1000     | ZORRO ARK      | 31            | 1          |
 ###### The code above returns table category recommendations ######
-###### This table returns the top three movie titles recommended based off of the viewers rental history ######
+###### This table returns the top three movie categories w/titles recommended based off of the customers rental history ######
+###### Ex: Customer_id top three film recommendations are all Classics ######
 
 # EMAIL_TEMPLATE_DATA PART C: Actor Insights # 
+## What information will be provided by this category of analysis? ##
+###### The number of movies each customer has rented with a specific starring actor ######
+###### Top three film recommendations starring each customers favorite actor ######
 
 ## Actor: Baseline Data ##
 ```sql
@@ -393,6 +417,7 @@ SELECT * FROM actor_joint_dataset;
 | 130          | 1          | 2005-05-24T22:53:30.000Z | 80       | BLANKET BEVERLY | 173       | ALAN        | DREYFUSS   |
 | 130          | 1          | 2005-05-24T22:53:30.000Z | 80       | BLANKET BEVERLY | 16        | FRED        | COSTNER    |
 ###### The following code returns the table actor_joint_dataset which returns the titles of films customers have watched with the first and last names of actors ######
+###### Customer_id 130 rented a film with Alan Dreyfuss on May 24th 2005 ######
 
 ## Actor COUNTS ## 
 
@@ -445,7 +470,8 @@ SELECT * FROM top_actor_counts;
 | 2            | 107       | GINA        | DEGENERES  | 5             |
 | 3            | 150       | JAYNE       | NOLTE      | 4             |
 | 4            | 102       | WALTER      | TORN       | 4             |
-###### The following code returns the table top_actor_counts which shows how many films each customer has rented with a particular actor #######
+###### The following code returns the table top_actor_counts which shows the number of times each customer has rented a film starring a specific actor #######
+###### Ex: Customer_id 4 has rented 4 films starring Walter Torn ######
 
 ## Official Actor Recommendations ##
 
@@ -491,4 +517,7 @@ SELECT * FROM actor_recommendations;
 | 1            | VAL         | BOLGER     | 6             | ALASKA PHANTOM    | 12       | 37        | 2          |
 | 1            | VAL         | BOLGER     | 6             | METROPOLIS COMA   | 572      | 37        | 3          |
 | 2            | GINA        | DEGENERES  | 5             | GOODFELLAS SALUTE | 369      | 107       | 1          |
-###### The above code returns the table actor_recommendations which provides three recommended films for each customer with the most common actor in their rental history 
+###### The above code returns the table actor_recommendations which provides three recommended films for each customer with their favorite actor ######
+###### Ex: Customer_id 1 has three film recommendations starring Val Bolger ####### 
+
+
