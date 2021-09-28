@@ -447,4 +447,48 @@ SELECT * FROM top_actor_counts;
 | 4            | 102       | WALTER      | TORN       | 4             |
 ###### The following code returns the table top_actor_counts which shows how many films each customer has rented with a particular actor #######
 
-## Actor Recommendations ##
+## Official Actor Recommendations ##
+
+```sql
+CREATE TEMP TABLE actor_recommendations AS
+WITH ranked_actor_films_cte AS (
+  SELECT
+    top_actor_counts.customer_id,
+    top_actor_counts.first_name,
+    top_actor_counts.last_name,
+    top_actor_counts.rental_count,
+    actor_film_counts.title,
+    actor_film_counts.film_id,
+    actor_film_counts.actor_id,
+    DENSE_RANK() OVER (
+      PARTITION BY
+        top_actor_counts.customer_id
+      ORDER BY
+        actor_film_counts.rental_count DESC,
+        actor_film_counts.title
+    ) AS reco_rank
+  FROM top_actor_counts
+  INNER JOIN actor_film_counts
+    ON top_actor_counts.actor_id = actor_film_counts.actor_id
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM actor_film_exclusions
+    WHERE
+      actor_film_exclusions.customer_id = top_actor_counts.customer_id AND
+      actor_film_exclusions.film_id = actor_film_counts.film_id
+  )
+)
+SELECT * FROM ranked_actor_films_cte
+WHERE reco_rank <= 3;
+```
+
+```sql
+SELECT * FROM actor_recommendations; 
+```
+| customer\_id | first\_name | last\_name | rental\_count | title             | film\_id | actor\_id | reco\_rank |
+| ------------ | ----------- | ---------- | ------------- | ----------------- | -------- | --------- | ---------- |
+| 1            | VAL         | BOLGER     | 6             | PRIMARY GLASS     | 697      | 37        | 1          |
+| 1            | VAL         | BOLGER     | 6             | ALASKA PHANTOM    | 12       | 37        | 2          |
+| 1            | VAL         | BOLGER     | 6             | METROPOLIS COMA   | 572      | 37        | 3          |
+| 2            | GINA        | DEGENERES  | 5             | GOODFELLAS SALUTE | 369      | 107       | 1          |
+###### The above code returns the table actor_recommendations which provides three recommended films for each customer with the most common actor in their rental history 
